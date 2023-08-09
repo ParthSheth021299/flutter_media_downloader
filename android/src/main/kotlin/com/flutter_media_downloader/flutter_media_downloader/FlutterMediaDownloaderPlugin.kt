@@ -191,28 +191,30 @@ class FlutterMediaDownloaderPlugin : FlutterPlugin, MethodCallHandler {
       .setPriority(NotificationCompat.PRIORITY_HIGH)
       .setAutoCancel(true)
 
-    // Create a progress bar
-    val maxProgress = 100 // Set the maximum progress value here
-    val indeterminate = initialProgress < 0
-    notificationBuilder.setProgress(maxProgress, initialProgress, indeterminate)
+    val maxProgress = 100
+    val indeterminate = initialProgress == null || initialProgress < 0
 
-    // Show the notification
+    if (initialProgress != null && initialProgress >= 0) {
+      notificationBuilder.setProgress(maxProgress, initialProgress, indeterminate)
+    }
+
     notificationManager.notify(notificationId, notificationBuilder.build())
 
-    // Simulate progress update for demonstration
-    Thread {
-      var progress = initialProgress
-      while (progress <= maxProgress) {
-        Thread.sleep(1000) // Simulate some work
-        progress += 10 // Update progress
-        notificationBuilder.setProgress(maxProgress, progress, indeterminate)
+    if (initialProgress != null && initialProgress >= 0) {
+      Thread {
+        var progress = initialProgress
+        while (progress <= maxProgress) {
+          Thread.sleep(1000)
+          progress += 10
+          notificationBuilder.setProgress(maxProgress, progress, indeterminate)
+          notificationManager.notify(notificationId, notificationBuilder.build())
+        }
+        notificationBuilder.setProgress(0, 0, false)
         notificationManager.notify(notificationId, notificationBuilder.build())
-      }
-      // Once the progress is complete, remove the progress bar
-      notificationBuilder.setProgress(0, 0, false)
-      notificationManager.notify(notificationId, notificationBuilder.build())
-    }.start()
+      }.start()
+    }
   }
+
 
 
   override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
