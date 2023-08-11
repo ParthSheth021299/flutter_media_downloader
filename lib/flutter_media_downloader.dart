@@ -5,14 +5,16 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 
-class MediaDownload{
+class MediaDownload {
 
   static const MethodChannel _channel =
   MethodChannel('custom_notifications');
 
-  Future<void> downloadPDF(String url,
+  Future<void> downloadPDF(BuildContext context,String url,
       [String? location, String? fileName]) async {
+    await requestPermission();
     final String pdfUrl = url; // URL of the PDF file
     final HttpClient httpClient = HttpClient();
 
@@ -24,9 +26,8 @@ class MediaDownload{
       final HttpClientResponse response = await request.close();
 
       if (response.statusCode == HttpStatus.ok) {
-
-        final Uint8List bytes = await consolidateHttpClientResponseBytes(response);
-        _updateProgress();
+        final Uint8List bytes = await consolidateHttpClientResponseBytes(
+            response);
         if (location == null || location == '') {
           final baseStorage = Platform.isAndroid
               ? await getExternalStorageDirectory()
@@ -43,9 +44,12 @@ class MediaDownload{
               .length - 3);
           String nameWithoutExtension = fileName ??
               fileNameWithExtension.substring(0, dotIndex);
-          final File file = File('${baseStorage?.path}/$nameWithoutExtension.$fileExtension');
+          final File file = File(
+              '${baseStorage?.path}/$nameWithoutExtension.$fileExtension');
           await file.writeAsBytes(bytes);
-          showCustomNotification('Media',nameWithoutExtension,1);
+          await openFile(context,
+              '${baseStorage?.path}/$nameWithoutExtension.$fileExtension');
+          await showCustomNotification('Media', nameWithoutExtension, 1,);
           print('PDF Downloaded successfully. Path: ${file.path}');
         } else {
 
@@ -53,16 +57,19 @@ class MediaDownload{
           int lastSlashIndex = url.lastIndexOf('/');
           String fileNameWithExtension = url.substring(lastSlashIndex + 1);
           int dotIndex = fileNameWithExtension.lastIndexOf('.');
-          final fileExtension = url.toString().substring(url.toString().toLowerCase().length - 3);
-          String nameWithoutExtension = fileName ?? fileNameWithExtension.substring(0, dotIndex);
-          final File file = File('$location/$nameWithoutExtension.$fileExtension');
-
+          final fileExtension = url.toString().substring(url
+              .toString()
+              .toLowerCase()
+              .length - 3);
+          String nameWithoutExtension = fileName ??
+              fileNameWithExtension.substring(0, dotIndex);
+          final File file = File(
+              '$location/$nameWithoutExtension.$fileExtension');
           await file.writeAsBytes(bytes);
+
 
           print('PDF Downloaded successfully. Path: ${file.path}');
         }
-
-
       }
       else {
         // API call failed
@@ -78,10 +85,8 @@ class MediaDownload{
     }
   }
 
-  double _progressValue = 0.0; // Initial progress value
 
-
-  void _updateProgress() {
+  /* void _updateProgress() {
     // Simulate a task with progress updates
     Future<void>.delayed(const Duration(milliseconds: 10), () {
 
@@ -94,6 +99,14 @@ class MediaDownload{
           _updateProgress();
         }
       });
+  }*/
+  Future<void> requestPermission() async {
+    final PermissionStatus status = await Permission.storage.request();
+    if (status.isGranted) {
+      // Permission granted, you can now access media files
+    } else {
+      // Permission denied, handle accordingly
+    }
   }
 
   Future<void> showCustomNotification(String title, String message,int initialProgress) async {
@@ -108,11 +121,16 @@ class MediaDownload{
       print('Error showing custom notification: $e');
     }
   }
-
-
-}
-class CustomNotifications {
-
-
-
+  Future<void> openFile(BuildContext context,String filePath) async {
+    try {
+      final bool success = await _channel.invokeMethod('openFile', filePath);
+      if (success) {
+        print('File opened successfully');
+      } else {
+        print('Failed to open file');
+      }
+    } on PlatformException catch (e) {
+      print('Error opening file: ${e.message}');
+    }
+  }
 }
