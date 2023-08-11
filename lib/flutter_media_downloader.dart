@@ -47,9 +47,10 @@ class MediaDownload {
           final File file = File(
               '${baseStorage?.path}/$nameWithoutExtension.$fileExtension');
           await file.writeAsBytes(bytes);
-          await openFile(context,
-              '${baseStorage?.path}/$nameWithoutExtension.$fileExtension');
-          await showCustomNotification('Media', nameWithoutExtension, 1,);
+          // await openFile(context,
+          //     '${baseStorage?.path}/$nameWithoutExtension.$fileExtension');
+          // await showCustomNotification('Media', nameWithoutExtension, 1,);
+          await downloadFile(url,'File Download',nameWithoutExtension,'${baseStorage?.path}/$nameWithoutExtension.$fileExtension');
           print('PDF Downloaded successfully. Path: ${file.path}');
         } else {
 
@@ -100,6 +101,20 @@ class MediaDownload {
         }
       });
   }*/
+  Future<void> downloadFile(String url, String title, String description,String filePath) async {
+    try {
+      await _channel.invokeMethod('downloadFile', {
+        'url': url,
+        'title': title,
+        'description': description,
+        'filePath': filePath
+      });
+    } on PlatformException catch (e) {
+      print('Error downloading file: ${e.message}');
+    }
+  }
+
+
   Future<void> requestPermission() async {
     final PermissionStatus status = await Permission.storage.request();
     if (status.isGranted) {

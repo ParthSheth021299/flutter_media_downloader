@@ -1,98 +1,18 @@
-/*
 package com.flutter_media_downloader.flutter_media_downloader
 
-import androidx.annotation.NonNull
-
-import io.flutter.embedding.engine.plugins.FlutterPlugin
-import io.flutter.plugin.common.MethodCall
-import io.flutter.plugin.common.MethodChannel
-import io.flutter.plugin.common.MethodChannel.MethodCallHandler
-import io.flutter.plugin.common.MethodChannel.Result
-
-*/
-/** FlutterMediaDownloaderPlugin *//*
-
-class FlutterMediaDownloaderPlugin: FlutterPlugin, MethodCallHandler {
-  /// The MethodChannel that will the communication between Flutter and native Android
-  ///
-  /// This local reference serves to register the plugin with the Flutter Engine and unregister it
-  /// when the Flutter Engine is detached from the Activity
-  private lateinit var channel : MethodChannel
-
-  override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
-    channel = MethodChannel(flutterPluginBinding.binaryMessenger, "flutter_media_downloader")
-    channel.setMethodCallHandler(this)
-  }
-
-  */
-/*override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
-    if (call.method == "getPlatformVersion") {
-      result.success("Android ${android.os.Build.VERSION.RELEASE}")
-    } else {
-      result.notImplemented()
-    }
-  }*//*
-
-  override fun onMethodCall(call: MethodCall, result: Result) {
-    when (call.method) {
-      "showCustomNotification" -> {
-        val title = call.argument<String>("title")
-        val message = call.argument<String>("message")
-        if (title != null && message != null) {
-          showCustomNotification(title, message)
-          result.success(null)
-        } else {
-          result.error("INVALID_ARGUMENTS", "Invalid arguments", null)
-        }
-      }
-      // ... Other methods ...
-      else -> {
-        result.notImplemented()
-      }
-    }
-  }
-  private fun showCustomNotification(title: String, message: String) {
-    val channelId = "flutter_media_downloader"
-    val notificationId = 1
-
-    val notificationManager =
-      context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-
-    // Create a notification channel for devices running Android 8.0 and above
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-      val channel = NotificationChannel(
-        channelId,
-        "Custom Notifications",
-        NotificationManager.IMPORTANCE_DEFAULT
-      )
-      notificationManager.createNotificationChannel(channel)
-    }
-
-    // Build the notification
-    val notificationBuilder = NotificationCompat.Builder(context, channelId)
-      .setContentTitle(title)
-      .setContentText(message)
-      .setSmallIcon(android.R.drawable.ic_dialog_info)
-      .setPriority(NotificationCompat.PRIORITY_HIGH)
-      .setAutoCancel(true)
-
-    // Show the notification
-    notificationManager.notify(notificationId, notificationBuilder.build())
-  }
-
-
-
-}
-*/
-
-package com.flutter_media_downloader.flutter_media_downloader
-
+import android.app.DownloadManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.app.PendingIntent.FLAG_IMMUTABLE
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.net.Uri
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import androidx.annotation.NonNull
 import androidx.core.app.NotificationCompat
@@ -160,6 +80,19 @@ class FlutterMediaDownloaderPlugin : FlutterPlugin, MethodCallHandler {
                     } else {
                         result.error("FILE_OPEN_ERROR", "Unable to open the file.", null)
                     }
+                }
+            }
+            "downloadFile" -> {
+                val url = call.argument<String>("url")
+                val title = call.argument<String>("title")
+                val description = call.argument<String>("description")
+                val context = flutterPluginBinding.applicationContext
+                val filePath = call.argument<String>("filePath")
+                if (url != null && title != null && description != null) {
+                    downloadFile(url, title, description,context,filePath)
+                    result.success(true)
+                } else {
+                    result.error("INVALID_ARGUMENTS", "Invalid arguments", null)
                 }
             }
             else -> {
@@ -332,6 +265,172 @@ class FlutterMediaDownloaderPlugin : FlutterPlugin, MethodCallHandler {
             result(false) // Notify Flutter about failure
         }
     }
+
+    private fun downloadFile(url: String, title: String, description: String,context: Context,filePath: String?) {
+        val request = DownloadManager.Request(Uri.parse(url))
+            .setTitle(title)
+            .setDescription(description)
+            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE)
+            .setDestinationInExternalPublicDir("Download", title)
+
+        val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+        val downloadId = downloadManager.enqueue(request)
+
+        if (filePath != null) {
+            showDownloadNotification(downloadId, title, description,filePath,context)
+        }
+    }
+
+    /*private fun showDownloadNotification(downloadId: Long, title: String, description: String, filePath: String,context: Context) {
+        val channelId = "file_downloader"
+        val notificationId = 1
+
+        val notificationManager =
+            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                channelId,
+                "File Downloader",
+                NotificationManager.IMPORTANCE_DEFAULT
+            )
+            notificationManager.createNotificationChannel(channel)
+        }
+
+        val notificationIntent = Intent(Intent.ACTION_VIEW).apply {
+            val file = File(filePath)
+            val fileUri = FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.provider",
+                file
+            )
+            setDataAndType(fileUri, getMimeType(file))
+            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            0,
+            notificationIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or FLAG_IMMUTABLE
+        )
+
+        val notificationBuilder = NotificationCompat.Builder(context, channelId)
+            .setContentTitle(title)
+            .setContentText(description)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
+
+        val query = DownloadManager.Query().setFilterById(downloadId)
+
+        val handler = Handler(Looper.getMainLooper())
+        handler.post(object : Runnable {
+            override fun run() {
+                val cursor = (context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager).query(query)
+                if (cursor.moveToFirst()) {
+                    val status = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS))
+                    if (status == DownloadManager.STATUS_SUCCESSFUL) {
+                        notificationBuilder.setContentText("Downloaded")
+                        notificationBuilder.setProgress(0, 0, false)
+                    } else if (status == DownloadManager.STATUS_RUNNING || status == DownloadManager.STATUS_PENDING) {
+                        val bytesDownloaded = cursor.getLong(cursor.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR))
+                        val bytesTotal = cursor.getLong(cursor.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES))
+                        val progress = (bytesDownloaded * 100 / bytesTotal).toInt()
+                        notificationBuilder.setProgress(100, progress, false)
+                    }
+                }
+//                cursor.close()
+
+                notificationManager.notify(notificationId, notificationBuilder.build())
+
+                // Repeat the update every second
+                handler.postDelayed(this, 1000)
+            }
+        })
+    }*/
+    private fun showDownloadNotification(downloadId: Long, title: String, description: String, filePath: String, context: Context) {
+        val channelId = "file_downloader"
+        val notificationId = 1
+
+        val notificationManager =
+            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                channelId,
+                "File Downloader",
+                NotificationManager.IMPORTANCE_DEFAULT
+            )
+            notificationManager.createNotificationChannel(channel)
+        }
+
+        val notificationIntent = Intent(Intent.ACTION_VIEW).apply {
+            val file = File(filePath)
+            val fileUri = FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.provider",
+                file
+            )
+            setDataAndType(fileUri, getMimeType(file))
+            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            0,
+            notificationIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val notificationBuilder = NotificationCompat.Builder(context, channelId)
+            .setContentTitle(title)
+            .setContentText(description)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
+
+        val query = DownloadManager.Query().setFilterById(downloadId)
+
+        val handler = Handler(Looper.getMainLooper())
+        var isDownloadComplete = false // Flag to track download completion
+
+        val updateNotificationRunnable = object : Runnable {
+            override fun run() {
+                val cursor = (context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager).query(query)
+                if (cursor.moveToFirst()) {
+                    val status = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS))
+                    if (status == DownloadManager.STATUS_SUCCESSFUL) {
+                        isDownloadComplete = true // Set the flag to true
+                        notificationBuilder.setContentText("Downloaded")
+                        notificationBuilder.setProgress(0, 0, false)
+                    } else if (status == DownloadManager.STATUS_RUNNING || status == DownloadManager.STATUS_PENDING) {
+                        val bytesDownloaded = cursor.getLong(cursor.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR))
+                        val bytesTotal = cursor.getLong(cursor.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES))
+                        val progress = (bytesDownloaded * 100 / bytesTotal).toInt()
+                        notificationBuilder.setProgress(100, progress, false)
+                    }
+                }
+                cursor.close()
+
+                notificationManager.notify(notificationId, notificationBuilder.build())
+
+                // Repeat the update every second if download is still ongoing
+                if (!isDownloadComplete) {
+                    handler.postDelayed(this, 1000)
+                }
+            }
+        }
+
+        // Initial call to start the update loop
+        handler.post(updateNotificationRunnable)
+    }
+
+
+
+
+
+
 
 
 
