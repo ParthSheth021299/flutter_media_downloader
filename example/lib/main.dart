@@ -4,6 +4,7 @@ import 'package:flutter_media_downloader/flutter_media_downloader.dart';
 void main() {
 
   runApp(const MyApp());
+  WidgetsFlutterBinding.ensureInitialized();
 }
 
 class MyApp extends StatefulWidget {
@@ -34,7 +35,7 @@ class _MyAppState extends State<MyApp> {
         ),
         body: Center(
           child: ElevatedButton(onPressed: () async {
-            _flutterMediaDownloaderPlugin.downloadPDF(context,'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf');
+            _flutterMediaDownloaderPlugin.downloadPDF(context,'https://www.gstatic.com/webp/gallery3/1.sm.png');
           }, child: const Text('Media Download')),
         ),
       ),
