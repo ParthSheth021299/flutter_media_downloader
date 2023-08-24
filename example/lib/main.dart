@@ -1,8 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_media_downloader/flutter_media_downloader.dart';
 
 void main() {
-
   runApp(const MyApp());
   WidgetsFlutterBinding.ensureInitialized();
 }
@@ -15,19 +16,15 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-
   final _flutterMediaDownloaderPlugin = MediaDownload();
 
   @override
   void initState() {
     super.initState();
-
   }
-
 
   @override
   Widget build(BuildContext context) {
-
     return MaterialApp(
       home: Scaffold(
         appBar: AppBar(
@@ -35,7 +32,7 @@ class _MyAppState extends State<MyApp> {
         ),
         body: Center(
           child: ElevatedButton(onPressed: () async {
-            _flutterMediaDownloaderPlugin.downloadPDF(context,'https://www.gstatic.com/webp/gallery3/1.sm.png');
+            _flutterMediaDownloaderPlugin.downloadMedia(context,'https://www.gstatic.com/webp/gallery3/1.sm.png');
           }, child: const Text('Media Download')),
         ),
       ),

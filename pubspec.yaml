@@ -1,11 +1,16 @@
 name: flutter_media_downloader
-description: This plugin helps user to download medias
-version: 0.0.1
-homepage:
+description: This plugin helps user to download medias for example pdf files, image files etc.
+version: 0.0.8
+homepage: https://github.com/ParthSheth021299/flutter_media_downloader
+maintainer: Parth Sheth
+documentation: https://github.com/ParthSheth021299/flutter_media_downloader/blob/master/README.md
+
+
 
 environment:
   sdk: '>=3.0.6 <4.0.0'
   flutter: ">=3.3.0"
+
 
 dependencies:
   flutter:
@@ -43,15 +48,6 @@ flutter:
         pluginClass: FlutterMediaDownloaderPlugin
       ios:
         pluginClass: FlutterMediaDownloaderPlugin
-      linux:
-        pluginClass: FlutterMediaDownloaderPlugin
-      macos:
-        pluginClass: FlutterMediaDownloaderPlugin
-      windows:
-        pluginClass: FlutterMediaDownloaderPluginCApi
-      web:
-        pluginClass: FlutterMediaDownloaderWeb
-        fileName: flutter_media_downloader_web.dart
 
   # To add assets to your plugin package, add an assets section, like this:
   # assets:

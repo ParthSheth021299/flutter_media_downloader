@@ -40,24 +40,7 @@ class FlutterMediaDownloaderPlugin : FlutterPlugin, MethodCallHandler {
 
     // Implement the MethodCallHandler interface.
     override fun onMethodCall(call: MethodCall, result: Result) {
-        /*when (call.method) {
-            "showCustomNotification" -> {
-                val title = call.argument<String>("title")
-                val message = call.argument<String>("message")
-                val initialProgress = call.argument<Int>("initialProgress")
-                if (title != null && message != null) {
-//          showCustomNotification(title, message)
-                    showCustomNotificationWithProgress(title, message, initialProgress)
-                    result.success(null)
-                } else {
-                    result.error("INVALID_ARGUMENTS", "Invalid arguments", null)
-                }
-            }
-            // Handle other methods...
-            else -> {
-                result.notImplemented()
-            }
-        }*/
+
         when (call.method) {
             "showCustomNotification" -> {
                 val title = call.argument<String>("title")
@@ -100,86 +83,7 @@ class FlutterMediaDownloaderPlugin : FlutterPlugin, MethodCallHandler {
             }
         }
     }
-///Without linear progress
-    /*private fun showCustomNotification(title: String, message: String) {
-      val channelId = "flutter_media_downloader"
-      val notificationId = 1
 
-      val notificationManager =
-        flutterPluginBinding.applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        val channel = NotificationChannel(
-          channelId,
-          "Custom Notifications",
-          NotificationManager.IMPORTANCE_DEFAULT
-        )
-        notificationManager.createNotificationChannel(channel)
-      }
-
-      val notificationBuilder = NotificationCompat.Builder(flutterPluginBinding.applicationContext, channelId)
-        .setContentTitle(title)
-        .setContentText(message)
-        .setSmallIcon(android.R.drawable.ic_dialog_info)
-        .setPriority(NotificationCompat.PRIORITY_HIGH)
-        .setAutoCancel(true)
-
-      notificationManager.notify(notificationId, notificationBuilder.build())
-    }*/
-
-    /*  private fun showCustomNotificationWithProgress(
-        title: String,
-        message: String,
-        initialProgress: Int?
-      ) {
-        val channelId = "flutter_media_downloader"
-        val notificationId = 1
-
-        val notificationManager =
-          flutterPluginBinding.applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-          val channel = NotificationChannel(
-            channelId,
-            "Custom Notifications",
-            NotificationManager.IMPORTANCE_DEFAULT
-          )
-          notificationManager.createNotificationChannel(channel)
-        }
-
-        val notificationBuilder = NotificationCompat.Builder(
-          flutterPluginBinding.applicationContext,
-          channelId
-        )
-          .setContentTitle(title)
-          .setContentText(message)
-          .setSmallIcon(android.R.drawable.ic_dialog_info)
-          .setPriority(NotificationCompat.PRIORITY_HIGH)
-          .setAutoCancel(true)
-
-        val maxProgress = 100
-        val indeterminate = initialProgress == null || initialProgress < 0
-
-        if (initialProgress != null && initialProgress >= 0) {
-          notificationBuilder.setProgress(maxProgress, initialProgress, indeterminate)
-        }
-
-        notificationManager.notify(notificationId, notificationBuilder.build())
-
-        if (initialProgress != null && initialProgress >= 0) {
-          Thread {
-            var progress = initialProgress
-            while (progress <= maxProgress) {
-              Thread.sleep(1000)
-              progress += 10
-              notificationBuilder.setProgress(maxProgress, progress, indeterminate)
-              notificationManager.notify(notificationId, notificationBuilder.build())
-            }
-            notificationBuilder.setProgress(0, 0, false)
-            notificationManager.notify(notificationId, notificationBuilder.build())
-          }.start()
-        }
-      }  */
     private fun showCustomNotificationWithProgress(
         title: String,
         message: String,
@@ -281,74 +185,7 @@ class FlutterMediaDownloaderPlugin : FlutterPlugin, MethodCallHandler {
         }
     }
 
-    /*private fun showDownloadNotification(downloadId: Long, title: String, description: String, filePath: String,context: Context) {
-        val channelId = "file_downloader"
-        val notificationId = 1
 
-        val notificationManager =
-            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                channelId,
-                "File Downloader",
-                NotificationManager.IMPORTANCE_DEFAULT
-            )
-            notificationManager.createNotificationChannel(channel)
-        }
-
-        val notificationIntent = Intent(Intent.ACTION_VIEW).apply {
-            val file = File(filePath)
-            val fileUri = FileProvider.getUriForFile(
-                context,
-                "${context.packageName}.provider",
-                file
-            )
-            setDataAndType(fileUri, getMimeType(file))
-            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-        }
-        val pendingIntent = PendingIntent.getActivity(
-            context,
-            0,
-            notificationIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or FLAG_IMMUTABLE
-        )
-
-        val notificationBuilder = NotificationCompat.Builder(context, channelId)
-            .setContentTitle(title)
-            .setContentText(description)
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setAutoCancel(true)
-            .setContentIntent(pendingIntent)
-
-        val query = DownloadManager.Query().setFilterById(downloadId)
-
-        val handler = Handler(Looper.getMainLooper())
-        handler.post(object : Runnable {
-            override fun run() {
-                val cursor = (context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager).query(query)
-                if (cursor.moveToFirst()) {
-                    val status = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS))
-                    if (status == DownloadManager.STATUS_SUCCESSFUL) {
-                        notificationBuilder.setContentText("Downloaded")
-                        notificationBuilder.setProgress(0, 0, false)
-                    } else if (status == DownloadManager.STATUS_RUNNING || status == DownloadManager.STATUS_PENDING) {
-                        val bytesDownloaded = cursor.getLong(cursor.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR))
-                        val bytesTotal = cursor.getLong(cursor.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES))
-                        val progress = (bytesDownloaded * 100 / bytesTotal).toInt()
-                        notificationBuilder.setProgress(100, progress, false)
-                    }
-                }
-//                cursor.close()
-
-                notificationManager.notify(notificationId, notificationBuilder.build())
-
-                // Repeat the update every second
-                handler.postDelayed(this, 1000)
-            }
-        })
-    }*/
     private fun showDownloadNotification(downloadId: Long, title: String, description: String, filePath: String, context: Context) {
         val channelId = "file_downloader"
         val notificationId = 1
