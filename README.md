@@ -105,4 +105,4 @@ Your support is greatly appreciated!
 Feel free to open an issue if you encounter any problems or think that the
 plugin is missing some feature.
 
-(img.png) parthsheth100@gmail.com
+[img.png] parthsheth100@gmail.com
