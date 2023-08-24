@@ -31,9 +31,12 @@ class _MyAppState extends State<MyApp> {
           title: const Text('Plugin example app'),
         ),
         body: Center(
-          child: ElevatedButton(onPressed: () async {
-            _flutterMediaDownloaderPlugin.downloadMedia(context,'https://www.gstatic.com/webp/gallery3/1.sm.png');
-          }, child: const Text('Media Download')),
+          child: ElevatedButton(
+              onPressed: () async {
+                _flutterMediaDownloaderPlugin.downloadMedia(
+                    context, 'https://www.gstatic.com/webp/gallery3/1.sm.png');
+              },
+              child: const Text('Media Download')),
         ),
       ),
     );

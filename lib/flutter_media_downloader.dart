@@ -11,11 +11,11 @@ import 'package:permission_handler/permission_handler.dart';
 /// Over here downloadMedia is there which helps user to download the media.
 /// Basically code is divided in to two parts for the android platform and for iOS platform
 
-
 class MediaDownload {
   static const MethodChannel _channel = MethodChannel('custom_notifications');
 
-  Future<void> downloadMedia(BuildContext context, String url, [String? location, String? fileName]) async {
+  Future<void> downloadMedia(BuildContext context, String url,
+      [String? location, String? fileName]) async {
     await requestPermission();
     final String pdfUrl = url;
     final HttpClient httpClient = HttpClient();
@@ -124,22 +124,19 @@ class MediaDownload {
           }
         }
       } else {
-
         if (kDebugMode) {
           print('API Request failed with status ${response.statusCode}');
         }
-
       }
     } catch (e) {
-
       if (kDebugMode) {
         print('Error: $e');
       }
-
     } finally {
       httpClient.close();
     }
   }
+
   ///downloadFile(Android code)
   ///
   ///This method invokes the notification method from the native side.
@@ -159,7 +156,6 @@ class MediaDownload {
       }
     }
   }
-
 
   ///openMediaFile(Android code)
   ///
@@ -192,12 +188,8 @@ class MediaDownload {
     final PermissionStatus notificationStatus =
         await Permission.notification.request();
     if (status.isGranted && notificationStatus.isGranted) {
-
-    } else {
-
-    }
+    } else {}
   }
-
 
   ///showCustomNotification(iOS Code)
   ///
@@ -215,6 +207,4 @@ class MediaDownload {
       }
     }
   }
-
-
 }
