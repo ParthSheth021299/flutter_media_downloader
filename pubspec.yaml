@@ -6,7 +6,6 @@ maintainer: Parth Sheth
 documentation: https://github.com/ParthSheth021299/flutter_media_downloader/blob/master/README.md
 
 
-
 environment:
   sdk: '>=3.0.6 <4.0.0'
   flutter: ">=3.3.0"
@@ -41,6 +40,8 @@ flutter:
   # This is required for using `dart:ffi`.
   # All these are used by the tooling to maintain consistency when
   # adding or updating assets for this project.
+  # Adds code generation (synthetic package) support
+  generate: true
   plugin:
     platforms:
       android:
