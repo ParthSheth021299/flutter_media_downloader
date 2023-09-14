@@ -29,14 +29,14 @@ class MediaDownload {
       final pathSegments = uri.pathSegments;
       if (response.statusCode == HttpStatus.ok) {
         final Uint8List bytes =
-        await consolidateHttpClientResponseBytes(response);
+            await consolidateHttpClientResponseBytes(response);
         final baseStorage = Platform.isAndroid
             ? await getExternalStorageDirectory()
             : await getApplicationDocumentsDirectory();
 
-        var fileNameWithExtension;
-        var imageName;
-        var extension;
+        String? fileNameWithExtension;
+        String? imageName;
+        String? extension;
         for (final segment in pathSegments) {
           // Split the segment by dot and check if it contains at least two parts (filename and extension)
           final parts = segment.split('.');
@@ -51,9 +51,7 @@ class MediaDownload {
           final parts = fileNameWithExtension.split('.');
           imageName = parts[0];
           extension = parts[1];
-
         }
-
 
         ///Android Code
         ///
@@ -62,22 +60,19 @@ class MediaDownload {
 
         if (Platform.isAndroid) {
           if (location == null || location == '') {
-
-            final File file = File(
-                '${baseStorage?.path}/${uri.pathSegments.last}');
+            final File file =
+                File('${baseStorage?.path}/${uri.pathSegments.last}');
             await file.writeAsBytes(bytes);
-            await downloadFile(url, '${uri.pathSegments.last}', imageName,
-                '${baseStorage?.path}/${imageName}${extension}');
+            await downloadFile(url, uri.pathSegments.last, imageName!,
+                '${baseStorage?.path}/$imageName$extension');
             if (kDebugMode) {
               print('PDF Downloaded successfully. Path: ${file.path}');
             }
           } else {
-
-            final File file =
-            File('$location/${uri.pathSegments.last}');
+            final File file = File('$location/${uri.pathSegments.last}');
             await file.writeAsBytes(bytes);
-            await downloadFile(url, '${uri.pathSegments.last}', imageName,
-                '$location/${imageName}${extension}');
+            await downloadFile(url, uri.pathSegments.last, imageName!,
+                '$location/$imageName$extension');
             if (kDebugMode) {
               print('PDF Downloaded successfully. Path: ${file.path}');
             }
@@ -93,20 +88,17 @@ class MediaDownload {
           if (location == null || location == '') {
             Directory documents = await getApplicationDocumentsDirectory();
 
-            final File file =
-            File('${documents.path}/${imageName}.${extension}');
+            final File file = File('${documents.path}/$imageName.$extension');
             await file.writeAsBytes(bytes);
-            await showCustomNotification('${imageName}${extension}', imageName);
+            await showCustomNotification('$imageName$extension', imageName!);
             await openMediaFile(file.path);
             if (kDebugMode) {
               print('PDF Downloaded successfully. Path: ${file.path}');
             }
           } else {
-
-            final File file =
-            File('$location/${imageName}.${extension}');
+            final File file = File('$location/$imageName.$extension');
             await file.writeAsBytes(bytes);
-            await showCustomNotification('${imageName}${extension}', imageName);
+            await showCustomNotification('$imageName$extension', imageName!);
             await openMediaFile(file.path);
             if (kDebugMode) {
               print('PDF Downloaded successfully. Path: ${file.path}');
@@ -176,7 +168,7 @@ class MediaDownload {
   Future<void> requestPermission() async {
     final PermissionStatus status = await Permission.storage.request();
     final PermissionStatus notificationStatus =
-    await Permission.notification.request();
+        await Permission.notification.request();
     if (status.isGranted && notificationStatus.isGranted) {
     } else {}
   }
