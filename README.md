@@ -83,7 +83,7 @@ class _MyAppState extends State<MyApp> {
         ),
         body: Center(
           child: ElevatedButton(onPressed: () async {
-            _flutterMediaDownloaderPlugin.downloadPDF(context,'https://www.gstatic.com/webp/gallery3/1.sm.png');
+            _flutterMediaDownloaderPlugin.downloadPDF(context,'https://urban-care-documents.s3.ap-south-1.amazonaws.com/dev/health-records/prescription/M02JW8-F6ACD014AD4B/788/2678/M02JW8-F6ACD014AD4B-2537882678.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20230914T090042Z&X-Amz-SignedHeaders=host&X-Amz-Expires=3600&X-Amz-Credential=AKIAUTC332YGVB3H5MUA%2F20230914%2Fap-south-1%2Fs3%2Faws4_request&X-Amz-Signature=cb1ab4e4cc217f5e79a81c51f6a75fdaa8b7f2f507c2c481bbd0fa0b15086312');
           }, child: const Text('Media Download')),
         ),
       ),

@@ -19,7 +19,6 @@ class MediaDownload {
     await requestPermission();
     final String pdfUrl = url;
     final HttpClient httpClient = HttpClient();
-
     try {
       final Uri uri = Uri.parse(pdfUrl);
       final HttpClientRequest request = await httpClient.getUrl(
@@ -27,13 +26,34 @@ class MediaDownload {
       );
 
       final HttpClientResponse response = await request.close();
-
+      final pathSegments = uri.pathSegments;
       if (response.statusCode == HttpStatus.ok) {
         final Uint8List bytes =
-            await consolidateHttpClientResponseBytes(response);
+        await consolidateHttpClientResponseBytes(response);
         final baseStorage = Platform.isAndroid
             ? await getExternalStorageDirectory()
             : await getApplicationDocumentsDirectory();
+
+        var fileNameWithExtension;
+        var imageName;
+        var extension;
+        for (final segment in pathSegments) {
+          // Split the segment by dot and check if it contains at least two parts (filename and extension)
+          final parts = segment.split('.');
+          if (parts.length >= 2) {
+            fileNameWithExtension = segment;
+            break; // Found a segment with a filename and extension, no need to continue
+          }
+        }
+
+        if (fileNameWithExtension != null) {
+          // Split the found segment into filename and extension
+          final parts = fileNameWithExtension.split('.');
+          imageName = parts[0];
+          extension = parts[1];
+
+        }
+
 
         ///Android Code
         ///
@@ -42,37 +62,22 @@ class MediaDownload {
 
         if (Platform.isAndroid) {
           if (location == null || location == '') {
-            int lastSlashIndex = url.lastIndexOf('/');
-            String fileNameWithExtension = url.substring(lastSlashIndex + 1);
 
-            int dotIndex = fileNameWithExtension.lastIndexOf('.');
-            final fileExtension = url
-                .toString()
-                .substring(url.toString().toLowerCase().length - 3);
-            String nameWithoutExtension =
-                fileName ?? fileNameWithExtension.substring(0, dotIndex);
             final File file = File(
-                '${baseStorage?.path}/$nameWithoutExtension.$fileExtension');
+                '${baseStorage?.path}/${uri.pathSegments.last}');
             await file.writeAsBytes(bytes);
-            await downloadFile(url, 'File Download', nameWithoutExtension,
-                '${baseStorage?.path}/$nameWithoutExtension.$fileExtension');
+            await downloadFile(url, '${uri.pathSegments.last}', imageName,
+                '${baseStorage?.path}/${imageName}${extension}');
             if (kDebugMode) {
               print('PDF Downloaded successfully. Path: ${file.path}');
             }
           } else {
-            int lastSlashIndex = url.lastIndexOf('/');
-            String fileNameWithExtension = url.substring(lastSlashIndex + 1);
-            int dotIndex = fileNameWithExtension.lastIndexOf('.');
-            final fileExtension = url
-                .toString()
-                .substring(url.toString().toLowerCase().length - 3);
-            String nameWithoutExtension =
-                fileName ?? fileNameWithExtension.substring(0, dotIndex);
+
             final File file =
-                File('$location/$nameWithoutExtension.$fileExtension');
+            File('$location/${uri.pathSegments.last}');
             await file.writeAsBytes(bytes);
-            await downloadFile(url, 'File Download', nameWithoutExtension,
-                '$location/$nameWithoutExtension.$fileExtension');
+            await downloadFile(url, '${uri.pathSegments.last}', imageName,
+                '$location/${imageName}${extension}');
             if (kDebugMode) {
               print('PDF Downloaded successfully. Path: ${file.path}');
             }
@@ -87,36 +92,21 @@ class MediaDownload {
         else {
           if (location == null || location == '') {
             Directory documents = await getApplicationDocumentsDirectory();
-            int lastSlashIndex = url.lastIndexOf('/');
-            String fileNameWithExtension = url.substring(lastSlashIndex + 1);
-            int dotIndex = fileNameWithExtension.lastIndexOf('.');
-            final fileExtension = url
-                .toString()
-                .substring(url.toString().toLowerCase().length - 3);
-            String nameWithoutExtension =
-                fileName ?? fileNameWithExtension.substring(0, dotIndex);
+
             final File file =
-                File('${documents.path}/$nameWithoutExtension.$fileExtension');
+            File('${documents.path}/${imageName}.${extension}');
             await file.writeAsBytes(bytes);
-            await showCustomNotification('File Download', nameWithoutExtension);
+            await showCustomNotification('${imageName}${extension}', imageName);
             await openMediaFile(file.path);
             if (kDebugMode) {
               print('PDF Downloaded successfully. Path: ${file.path}');
             }
           } else {
-            ///Fetch file name without extension.
-            int lastSlashIndex = url.lastIndexOf('/');
-            String fileNameWithExtension = url.substring(lastSlashIndex + 1);
-            int dotIndex = fileNameWithExtension.lastIndexOf('.');
-            final fileExtension = url
-                .toString()
-                .substring(url.toString().toLowerCase().length - 3);
-            String nameWithoutExtension =
-                fileName ?? fileNameWithExtension.substring(0, dotIndex);
+
             final File file =
-                File('$location/$nameWithoutExtension.$fileExtension');
+            File('$location/${imageName}.${extension}');
             await file.writeAsBytes(bytes);
-            await showCustomNotification('File Download', nameWithoutExtension);
+            await showCustomNotification('${imageName}${extension}', imageName);
             await openMediaFile(file.path);
             if (kDebugMode) {
               print('PDF Downloaded successfully. Path: ${file.path}');
@@ -186,7 +176,7 @@ class MediaDownload {
   Future<void> requestPermission() async {
     final PermissionStatus status = await Permission.storage.request();
     final PermissionStatus notificationStatus =
-        await Permission.notification.request();
+    await Permission.notification.request();
     if (status.isGranted && notificationStatus.isGranted) {
     } else {}
   }
