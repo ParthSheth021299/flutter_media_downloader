@@ -26,6 +26,7 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+
       home: Scaffold(
         appBar: AppBar(
           title: const Text('Plugin example app'),
@@ -34,7 +35,7 @@ class _MyAppState extends State<MyApp> {
           child: ElevatedButton(
               onPressed: () async {
                 _flutterMediaDownloaderPlugin.downloadMedia(
-                    context, 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf');
+                    context, 'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/1080/Big_Buck_Bunny_1080_10s_30MB.mp4');
               },
               child: const Text('Media Download')),
         ),

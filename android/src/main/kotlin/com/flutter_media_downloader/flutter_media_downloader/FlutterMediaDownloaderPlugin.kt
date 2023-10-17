@@ -32,10 +32,12 @@ class FlutterMediaDownloaderPlugin : FlutterPlugin, MethodCallHandler {
     // Initialize the MethodChannel.
     private lateinit var channel: MethodChannel
     private var context: Context? = null
+    private var downloadManager: DownloadManager? = null
     override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         this.flutterPluginBinding = flutterPluginBinding
         channel = MethodChannel(flutterPluginBinding.binaryMessenger, "custom_notifications")
         channel.setMethodCallHandler(this)
+        downloadManager = context?.getSystemService(Context.DOWNLOAD_SERVICE) as? DownloadManager
     }
 
     // Implement the MethodCallHandler interface.
@@ -78,9 +80,19 @@ class FlutterMediaDownloaderPlugin : FlutterPlugin, MethodCallHandler {
                     result.error("INVALID_ARGUMENTS", "Invalid arguments", null)
                 }
             }
+            "cancelDownload" -> {
+                val downloadId = call.argument<Long>("downloadId")
+                if (downloadId != null) {
+                    cancelDownload(downloadId)
+                    result.success(true)
+                } else {
+                    result.error("INVALID_ARGUMENTS", "Invalid arguments", null)
+                }
+            }
             else -> {
                 result.notImplemented()
             }
+
         }
     }
 
@@ -90,6 +102,12 @@ class FlutterMediaDownloaderPlugin : FlutterPlugin, MethodCallHandler {
         initialProgress: Int?,
 
     ) {
+        val cancelIntent = PendingIntent.getBroadcast(
+            context,
+            0,
+            Intent("CANCEL_DOWNLOAD"),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
         val channelId = "flutter_media_downloader"
         val notificationId = 1
 
@@ -114,6 +132,11 @@ class FlutterMediaDownloaderPlugin : FlutterPlugin, MethodCallHandler {
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
+            .addAction(
+                android.R.drawable.ic_menu_close_clear_cancel,
+                "Cancel",
+                cancelIntent
+            )
         // Set the PendingIntent
 
         val maxProgress = 100
@@ -126,6 +149,18 @@ class FlutterMediaDownloaderPlugin : FlutterPlugin, MethodCallHandler {
         }
 
         notificationManager.notify(notificationId, notificationBuilder.build())
+        context!!.registerReceiver(object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                if (intent?.action == "CANCEL_DOWNLOAD") {
+                    // Handle the Cancel button click here
+                    // Call the cancelDownload method with the appropriate downloadId
+                    val downloadId = intent.getLongExtra("downloadId", -1)
+                    if (downloadId.toInt() != -1) {
+                        cancelDownload(downloadId)
+                    }
+                }
+            }
+        }, IntentFilter("CANCEL_DOWNLOAD"))
 
         if (initialProgress != null && initialProgress >= 0) {
             Thread {
@@ -144,7 +179,13 @@ class FlutterMediaDownloaderPlugin : FlutterPlugin, MethodCallHandler {
 
     }
 
-        private fun openFile(context: Context,filePath: String?, result: (Boolean) -> Unit) {
+    private fun cancelDownload(downloadId: Long) {
+        // Cancel the download using DownloadManager
+        downloadManager?.remove(downloadId)
+    }
+
+
+    private fun openFile(context: Context,filePath: String?, result: (Boolean) -> Unit) {
 
         val file = File(filePath)
         if (file.exists()) {
