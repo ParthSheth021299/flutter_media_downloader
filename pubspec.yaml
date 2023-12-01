@@ -1,6 +1,6 @@
 name: flutter_media_downloader
 description: This plugin helps user to download medias for example pdf files, image files etc.
-version: 1.0.1
+version: 1.0.2
 homepage: https://github.com/ParthSheth021299/flutter_media_downloader
 maintainer: Parth Sheth
 documentation: https://github.com/ParthSheth021299/flutter_media_downloader/blob/master/README.md
