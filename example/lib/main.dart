@@ -35,7 +35,7 @@ class _MyAppState extends State<MyApp> {
           child: ElevatedButton(
               onPressed: () async {
                  _flutterMediaDownloaderPlugin.downloadMedia(
-                    context, 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf');
+                    context, 'https://www.kasandbox.org/programming-images/avatars/spunky-sam-green.png');
               },
               child: const Text('Media Download')),
         ),
