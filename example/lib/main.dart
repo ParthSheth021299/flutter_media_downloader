@@ -37,7 +37,7 @@ class _MyAppState extends State<MyApp> {
                     context,
                     'https://www.kasandbox.org/programming-images/avatars/spunky-sam-green.png',
                     null,
-                    "spunky-sam-green",
+                    "test",
                     "png");
               },
               child: const Text('Media Download')),

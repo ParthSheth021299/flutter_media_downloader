@@ -1,5 +1,5 @@
 package com.flutter_media_downloader.flutter_media_downloader
-
+import android.webkit.MimeTypeMap
 import android.app.DownloadManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -212,12 +212,20 @@ class FlutterMediaDownloaderPlugin : FlutterPlugin, MethodCallHandler {
     }
 
     private fun downloadFile(url: String, title: String, description: String,context: Context,filePath: String?) {
+         val file = File(filePath)
+            val fileUri = FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.provider",
+                file
+            )
+            // setDataAndType(fileUri, getMimeType(file))
         val request = DownloadManager.Request(Uri.parse(url))
             .setTitle(title)
             .setDescription(description)
             .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE)
             .setDestinationInExternalPublicDir("Download", title)
-
+            .setMimeType(getMimeType(file)) 
+            
         val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
         val downloadId = downloadManager.enqueue(request)
 
@@ -304,24 +312,31 @@ class FlutterMediaDownloaderPlugin : FlutterPlugin, MethodCallHandler {
         handler.post(updateNotificationRunnable)
     }
 
-
-
-
-
-
-
-
-
     private fun getMimeType(file: File): String? {
         val extension = file.extension
-        return when (extension.toLowerCase()) {
-            "pdf" -> "application/pdf"
-            "jpg", "jpeg", "png" -> "image/*"
-            "mp4" -> "video/*"
-            // Add more cases for other file types as needed
-            else -> "*/*"
+        return if (extension.isNotEmpty()) {
+            val mimeTypeMap = MimeTypeMap.getSingleton()
+            mimeTypeMap.getMimeTypeFromExtension(extension.toLowerCase())
+        } else {
+            "*/*"
         }
     }
+
+
+
+
+
+  
+    // private fun getMimeType(file: File): String? {
+    //     val extension = file.extension
+    //     return when (extension.toLowerCase()) {
+    //         "pdf" -> "application/pdf"
+    //         "jpg", "jpeg", "png" -> "image/*"
+    //         "mp4" -> "video/*"
+    //         // Add more cases for other file types as needed
+    //         else -> "*/*"
+    //     }
+    // }
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         // Clean up resources if needed

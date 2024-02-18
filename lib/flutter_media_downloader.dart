@@ -58,7 +58,8 @@ class MediaDownload {
             await file.writeAsBytes(bytes);
             await downloadFile(
                 url,
-                nameWithoutExtension /*'File Download'*/,
+                nameWithoutExtension,
+                /*'File Download'*/
                 nameWithoutExtension,
                 '${baseStorage?.path}/$nameWithoutExtension.$fileExtension');
             if (kDebugMode) {
