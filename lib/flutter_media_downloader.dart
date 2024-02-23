@@ -50,7 +50,7 @@ class MediaDownload {
             int dotIndex = fileNameWithExtension.lastIndexOf('.');
             final fileExtension = uriPath
                 .toString()
-                .substring(url.toString().toLowerCase().length - 3);
+                .substring(uriPath.toString().toLowerCase().length - 3);
             String nameWithoutExtension =
                 fileName ?? fileNameWithExtension.substring(0, dotIndex);
 
@@ -97,7 +97,7 @@ class MediaDownload {
             int dotIndex = fileNameWithExtension.lastIndexOf('.');
             final fileExtension = uriPath
                 .toString()
-                .substring(url.toString().toLowerCase().length - 3);
+                .substring(uriPath.toString().toLowerCase().length - 3);
             String nameWithoutExtension =
                 fileName ?? fileNameWithExtension.substring(0, dotIndex);
             final File file =
@@ -110,12 +110,12 @@ class MediaDownload {
             }
           } else {
             ///Fetch file name without extension.
-            int lastSlashIndex = url.lastIndexOf('/');
-            String fileNameWithExtension = url.substring(lastSlashIndex + 1);
+            int lastSlashIndex = uriPath.lastIndexOf('/');
+            String fileNameWithExtension = uriPath.substring(lastSlashIndex + 1);
             int dotIndex = fileNameWithExtension.lastIndexOf('.');
-            final fileExtension = url
+            final fileExtension = uriPath
                 .toString()
-                .substring(url.toString().toLowerCase().length - 3);
+                .substring(uriPath.toString().toLowerCase().length - 3);
             String nameWithoutExtension =
                 fileName ?? fileNameWithExtension.substring(0, dotIndex);
             final File file =
