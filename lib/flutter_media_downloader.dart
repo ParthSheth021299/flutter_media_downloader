@@ -57,8 +57,14 @@ class MediaDownload {
             final File file = File(
                 '${baseStorage?.path}/$nameWithoutExtension.$fileExtension');
             await file.writeAsBytes(bytes);
-            await downloadFile(url, 'File Download', nameWithoutExtension,
-                '${baseStorage?.path}/$nameWithoutExtension.$fileExtension');
+
+            await downloadFile(
+              url: url,
+              description: 'File Download',
+              title: nameWithoutExtension,
+              filePath: '${baseStorage?.path}/$nameWithoutExtension.$fileExtension',
+            );
+
             if (kDebugMode) {
               print('PDF Downloaded successfully. Path: ${file.path}');
             }
@@ -75,8 +81,12 @@ class MediaDownload {
             final File file =
                 File('$location/$nameWithoutExtension.$fileExtension');
             await file.writeAsBytes(bytes);
-            await downloadFile(url, 'File Download', nameWithoutExtension,
-                '$location/$nameWithoutExtension.$fileExtension');
+            await downloadFile(
+              url: url,
+              description: 'File Download',
+              title: nameWithoutExtension,
+              filePath: '$location/$nameWithoutExtension.$fileExtension',
+            );
             if (kDebugMode) {
               print('PDF Downloaded successfully. Path: ${file.path}');
             }
@@ -148,7 +158,10 @@ class MediaDownload {
   ///This method invokes the notification method from the native side.
 
   Future<void> downloadFile(
-      String url, String title, String description, String filePath) async {
+      {required String url,
+      required String title,
+      required String description,
+      required String filePath}) async {
     try {
       await _channel.invokeMethod('downloadFile', {
         'url': url,
