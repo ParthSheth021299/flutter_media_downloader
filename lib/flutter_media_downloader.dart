@@ -111,7 +111,8 @@ class MediaDownload {
           } else {
             ///Fetch file name without extension.
             int lastSlashIndex = uriPath.lastIndexOf('/');
-            String fileNameWithExtension = uriPath.substring(lastSlashIndex + 1);
+            String fileNameWithExtension =
+                uriPath.substring(lastSlashIndex + 1);
             int dotIndex = fileNameWithExtension.lastIndexOf('.');
             final fileExtension = uriPath
                 .toString()
