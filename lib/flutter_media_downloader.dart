@@ -47,9 +47,9 @@ class MediaDownload {
             String nameWithoutExtension =
                 FileNameFormat().fileNameWithOutExtension(url);
 
-            debugPrint('Android fileExtension ${'$fileExtension'}');
+            debugPrint('Android fileExtension $fileExtension');
             debugPrint(
-                'Android nameWithoutExtension ${'$nameWithoutExtension'}');
+                'Android nameWithoutExtension $nameWithoutExtension');
             debugPrint(
                 'Android  ${baseStorage?.path}/$nameWithoutExtension.$fileExtension');
             final File file = File(

@@ -40,16 +40,16 @@ class FileNameFormat {
     int dotIndex = fileNameWithExtension.lastIndexOf('.');
 
     // Find the index of the first query parameter (?)
-    int queryParamIndex = fileNameWithExtension.indexOf('?');
+    // int queryParamIndex = fileNameWithExtension.indexOf('?');
 
     // Extract the file extension
-    String fileExtension;
-    if (queryParamIndex != -1) {
-      fileExtension =
-          fileNameWithExtension.substring(dotIndex + 1, queryParamIndex);
-    } else {
-      fileExtension = fileNameWithExtension.substring(dotIndex + 1);
-    }
+    // String fileExtension;
+    // if (queryParamIndex != -1) {
+    //   fileExtension =
+    //       fileNameWithExtension.substring(dotIndex + 1, queryParamIndex);
+    // } else {
+    //   fileExtension = fileNameWithExtension.substring(dotIndex + 1);
+    // }
 
     // Extract the file name without extension
     String nameWithoutExtension = fileNameWithExtension.substring(0, dotIndex);
@@ -60,7 +60,7 @@ class FileNameFormat {
       nameWithoutExtension =
           nameWithoutExtension.substring(lastSlashInName + 1);
     }
-    debugPrint('FUNCTION NAME ${nameWithoutExtension}');
+    debugPrint('FUNCTION NAME $nameWithoutExtension');
     return nameWithoutExtension;
   }
 }
