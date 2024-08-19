@@ -44,12 +44,12 @@ class MediaDownload {
         if (Platform.isAndroid) {
           if (location == null || location == '') {
             String fileExtension = FileNameFormat().fileNameExtension(url);
+            if (fileExtension.isEmpty) throw Exception('File extension is empty');
             String nameWithoutExtension =
                 FileNameFormat().fileNameWithOutExtension(url);
 
             debugPrint('Android fileExtension $fileExtension');
-            debugPrint(
-                'Android nameWithoutExtension $nameWithoutExtension');
+            debugPrint('Android nameWithoutExtension $nameWithoutExtension');
             debugPrint(
                 'Android  ${baseStorage?.path}/$nameWithoutExtension.$fileExtension');
             final File file = File(
@@ -65,6 +65,7 @@ class MediaDownload {
             }
           } else {
             String fileExtension = FileNameFormat().fileNameExtension(url);
+            if (fileExtension.isEmpty) throw Exception('File extension is empty');
             String nameWithoutExtension =
                 FileNameFormat().fileNameWithOutExtension(url);
             final File file =
@@ -90,6 +91,7 @@ class MediaDownload {
           if (location == null || location == '') {
             Directory documents = await getApplicationDocumentsDirectory();
             String fileExtension = FileNameFormat().fileNameExtension(url);
+            if (fileExtension.isEmpty) throw Exception('File extension is empty');
             String nameWithoutExtension =
                 FileNameFormat().fileNameWithOutExtension(url);
             final File file = File(
@@ -103,6 +105,7 @@ class MediaDownload {
             }
           } else {
             String fileExtension = FileNameFormat().fileNameExtension(url);
+            if (fileExtension.isEmpty) throw Exception('File extension is empty');
             String nameWithoutExtension =
                 FileNameFormat().fileNameWithOutExtension(url);
             final File file =
@@ -119,10 +122,8 @@ class MediaDownload {
           debugPrint('Platform Windows');
         }
       }
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error: $e');
-      }
+    } catch (e, trace) {
+      debugPrint('MediaDownload: downloadMedia: E: $e,\n$trace.');
     } finally {
       httpClient.close();
     }
@@ -175,11 +176,66 @@ class MediaDownload {
   }
 
   Future<void> requestPermission() async {
-    final PermissionStatus status = await Permission.storage.request();
-    final PermissionStatus notificationStatus =
-        await Permission.notification.request();
-    if (status.isGranted && notificationStatus.isGranted) {
-    } else {}
+    final bool storageMediaStatus =
+        (await requestMediaPermissions() || await requestStoragePermission());
+    final bool notificationStatus = await processNotificationPermission();
+    debugPrint(
+        'requestPermission: storageMediaStatus: $storageMediaStatus, notificationStatus: $notificationStatus');
+  }
+
+  /// permission-storage/media
+  // 1. Process storage permission
+  Future<bool> requestStoragePermission() async {
+    try {
+      if (await Permission.storage.isGranted) {
+        return true;
+      } else {
+        var status = await Permission.storage.request();
+        if (status.isGranted) {
+          return true;
+        }
+      }
+      return false;
+    } on Exception catch (e) {
+      debugPrint('requestStoragePermission: E: $e *');
+      return false;
+    }
+  }
+
+  // 2. Process media permissions
+  Future<bool> requestMediaPermissions() async {
+    try {
+      Map<Permission, PermissionStatus> statuses = await [
+        Permission.photos,
+        Permission.videos,
+        Permission.audio,
+      ].request();
+
+      return statuses[Permission.photos]?.isGranted == true &&
+          statuses[Permission.videos]?.isGranted == true &&
+          statuses[Permission.audio]?.isGranted == true;
+    } on Exception catch (e) {
+      debugPrint('requestMediaPermissions: E: $e *');
+      return false;
+    }
+  }
+
+  /// permission-notification
+  Future<bool> processNotificationPermission() async {
+    try {
+      if (await Permission.notification.isGranted) {
+        return true;
+      } else {
+        var status = await Permission.notification.request();
+        if (status.isGranted) {
+          return true;
+        }
+      }
+      return false;
+    } on Exception catch (e) {
+      debugPrint('processNotificationPermission: E: $e *');
+      return false;
+    }
   }
 
   ///showCustomNotification(iOS Code)
