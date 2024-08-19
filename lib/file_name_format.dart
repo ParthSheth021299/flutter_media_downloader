@@ -1,66 +1,83 @@
+import 'dart:math';
+
 import 'package:flutter/cupertino.dart';
 
 class FileNameFormat {
   String fileNameExtension(String url) {
-    int lastSlashIndex = url.lastIndexOf('/');
+    try {
+      int lastSlashIndex = url.lastIndexOf('/');
 
-    // Extract the file name with extension
-    String fileNameWithExtension = url.substring(lastSlashIndex + 1);
+      // Extract the file name with extension
+      String fileNameWithExtension = url.substring(lastSlashIndex + 1);
 
-    // Decode the file name with extension
-    fileNameWithExtension = Uri.decodeComponent(fileNameWithExtension);
+      // Decode the file name with extension
+      fileNameWithExtension = Uri.decodeComponent(fileNameWithExtension);
 
-    // Find the index of the last dot (before the file extension)
-    int dotIndex = fileNameWithExtension.lastIndexOf('.');
+      // Find the index of the last dot (before the file extension)
+      int dotIndex = fileNameWithExtension.lastIndexOf('.');
 
-    // Find the index of the first query parameter (?)
-    int queryParamIndex = fileNameWithExtension.indexOf('?');
+      // Find the index of the first query parameter (?)
+      int queryParamIndex = fileNameWithExtension.indexOf('?');
 
-    // Extract the file extension
-    String fileExtension;
-    if (queryParamIndex != -1) {
-      fileExtension =
-          fileNameWithExtension.substring(dotIndex + 1, queryParamIndex);
-    } else {
-      fileExtension = fileNameWithExtension.substring(dotIndex + 1);
+      // Extract the file extension
+      String fileExtension;
+      if (queryParamIndex != -1) {
+        fileExtension =
+            fileNameWithExtension.substring(dotIndex + 1, queryParamIndex);
+      } else {
+        fileExtension = fileNameWithExtension.substring(dotIndex + 1);
+      }
+      return fileExtension;
+    } on Exception catch (e) {
+      debugPrint('fileNameExtension: E: $e');
+      return '';
     }
-    return fileExtension;
   }
 
   String fileNameWithOutExtension(String url) {
-    int lastSlashIndex = url.lastIndexOf('/');
+    try {
+      int lastSlashIndex = url.lastIndexOf('/');
 
-    // Extract the file name with extension
-    String fileNameWithExtension = url.substring(lastSlashIndex + 1);
+      // Extract the file name with extension
+      String fileNameWithExtension = url.substring(lastSlashIndex + 1);
 
-    // Decode the file name with extension
-    fileNameWithExtension = Uri.decodeComponent(fileNameWithExtension);
+      // Decode the file name with extension
+      fileNameWithExtension = Uri.decodeComponent(fileNameWithExtension);
 
-    // Find the index of the last dot (before the file extension)
-    int dotIndex = fileNameWithExtension.lastIndexOf('.');
+      // Find the index of the last dot (before the file extension)
+      int dotIndex = fileNameWithExtension.lastIndexOf('.');
 
-    // Find the index of the first query parameter (?)
-    // int queryParamIndex = fileNameWithExtension.indexOf('?');
+      // Find the index of the first query parameter (?)
+      // int queryParamIndex = fileNameWithExtension.indexOf('?');
 
-    // Extract the file extension
-    // String fileExtension;
-    // if (queryParamIndex != -1) {
-    //   fileExtension =
-    //       fileNameWithExtension.substring(dotIndex + 1, queryParamIndex);
-    // } else {
-    //   fileExtension = fileNameWithExtension.substring(dotIndex + 1);
-    // }
+      // Extract the file extension
+      // String fileExtension;
+      // if (queryParamIndex != -1) {
+      //   fileExtension =
+      //       fileNameWithExtension.substring(dotIndex + 1, queryParamIndex);
+      // } else {
+      //   fileExtension = fileNameWithExtension.substring(dotIndex + 1);
+      // }
 
-    // Extract the file name without extension
-    String nameWithoutExtension = fileNameWithExtension.substring(0, dotIndex);
+      // Extract the file name without extension
+      String nameWithoutExtension =
+          fileNameWithExtension.substring(0, dotIndex);
 
-    // Remove any prefix before the last slash
-    int lastSlashInName = nameWithoutExtension.lastIndexOf('/');
-    if (lastSlashInName != -1) {
-      nameWithoutExtension =
-          nameWithoutExtension.substring(lastSlashInName + 1);
+      // Remove any prefix before the last slash
+      int lastSlashInName = nameWithoutExtension.lastIndexOf('/');
+      if (lastSlashInName != -1) {
+        nameWithoutExtension =
+            nameWithoutExtension.substring(lastSlashInName + 1);
+      }
+      debugPrint('FUNCTION NAME $nameWithoutExtension');
+      return nameWithoutExtension;
+    } on Exception catch (e) {
+      debugPrint('fileNameWithOutExtension:[ $url ]: E: $e');
+      final randomNumber = Random().nextInt(1000);
+      final now = DateTime.now();
+      final generatedFileName = 'file_${randomNumber}_${now}_';
+      debugPrint('fileNameWithOutExtension: E: generated file name: $generatedFileName');
+      return generatedFileName;
     }
-    debugPrint('FUNCTION NAME $nameWithoutExtension');
-    return nameWithoutExtension;
   }
 }

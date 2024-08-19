@@ -44,6 +44,7 @@ class MediaDownload {
         if (Platform.isAndroid) {
           if (location == null || location == '') {
             String fileExtension = FileNameFormat().fileNameExtension(url);
+            if (fileExtension.isEmpty) throw Exception('File extension is empty');
             String nameWithoutExtension =
                 FileNameFormat().fileNameWithOutExtension(url);
 
@@ -64,6 +65,7 @@ class MediaDownload {
             }
           } else {
             String fileExtension = FileNameFormat().fileNameExtension(url);
+            if (fileExtension.isEmpty) throw Exception('File extension is empty');
             String nameWithoutExtension =
                 FileNameFormat().fileNameWithOutExtension(url);
             final File file =
@@ -89,6 +91,7 @@ class MediaDownload {
           if (location == null || location == '') {
             Directory documents = await getApplicationDocumentsDirectory();
             String fileExtension = FileNameFormat().fileNameExtension(url);
+            if (fileExtension.isEmpty) throw Exception('File extension is empty');
             String nameWithoutExtension =
                 FileNameFormat().fileNameWithOutExtension(url);
             final File file = File(
@@ -102,6 +105,7 @@ class MediaDownload {
             }
           } else {
             String fileExtension = FileNameFormat().fileNameExtension(url);
+            if (fileExtension.isEmpty) throw Exception('File extension is empty');
             String nameWithoutExtension =
                 FileNameFormat().fileNameWithOutExtension(url);
             final File file =
@@ -118,10 +122,8 @@ class MediaDownload {
           debugPrint('Platform Windows');
         }
       }
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error: $e');
-      }
+    } catch (e, trace) {
+      debugPrint('MediaDownload: downloadMedia: E: $e,\n$trace.');
     } finally {
       httpClient.close();
     }
