@@ -13,8 +13,13 @@ This is easy to use plugin.
 
 You just need to add permissions in your manifest file for the push notification. And other permission for read external storage.
 ```xml
+<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- For Android 13+ (API 33 and above) -->
+<uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+<uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+<uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
 ```
 
 ### Open downloaded file from notification

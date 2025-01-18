@@ -48,8 +48,7 @@ class MediaDownload {
                 FileNameFormat().fileNameWithOutExtension(url);
 
             debugPrint('Android fileExtension $fileExtension');
-            debugPrint(
-                'Android nameWithoutExtension $nameWithoutExtension');
+            debugPrint('Android nameWithoutExtension $nameWithoutExtension');
             debugPrint(
                 'Android  ${baseStorage?.path}/$nameWithoutExtension.$fileExtension');
             final File file = File(
@@ -95,8 +94,8 @@ class MediaDownload {
             final File file = File(
                 '${documents.path}/${fileName ?? nameWithoutExtension}.$fileExtension');
             await file.writeAsBytes(bytes);
-            await showCustomNotification(fileName ?? nameWithoutExtension,
-                fileName ?? nameWithoutExtension);
+            // await showCustomNotification(fileName ?? nameWithoutExtension,
+            //     fileName ?? nameWithoutExtension);
             await openMediaFile(file.path);
             if (kDebugMode) {
               print('PDF Downloaded successfully. Path: ${file.path}');
@@ -108,8 +107,8 @@ class MediaDownload {
             final File file =
                 File('$location/$nameWithoutExtension.$fileExtension');
             await file.writeAsBytes(bytes);
-            await showCustomNotification(
-                fileName ?? nameWithoutExtension, nameWithoutExtension);
+            // await showCustomNotification(
+            //     fileName ?? nameWithoutExtension, nameWithoutExtension);
             await openMediaFile(file.path);
             if (kDebugMode) {
               print('PDF Downloaded successfully. Path: ${file.path}');
@@ -179,7 +178,10 @@ class MediaDownload {
     final PermissionStatus notificationStatus =
         await Permission.notification.request();
     if (status.isGranted && notificationStatus.isGranted) {
-    } else {}
+    } else if (status.isPermanentlyDenied ||
+        notificationStatus.isPermanentlyDenied) {
+      await openAppSettings();
+    }
   }
 
   ///showCustomNotification(iOS Code)
