@@ -31,7 +31,7 @@ class MediaDownload {
 
       if (response.statusCode == HttpStatus.ok) {
         final Uint8List bytes =
-            await consolidateHttpClientResponseBytes(response);
+        await consolidateHttpClientResponseBytes(response);
         final baseStorage = Platform.isAndroid
             ? await getExternalStorageDirectory()
             : await getApplicationDocumentsDirectory();
@@ -45,7 +45,7 @@ class MediaDownload {
           if (location == null || location == '') {
             String fileExtension = FileNameFormat().fileNameExtension(url);
             String nameWithoutExtension =
-                FileNameFormat().fileNameWithOutExtension(url);
+            FileNameFormat().fileNameWithOutExtension(url);
 
             debugPrint('Android fileExtension $fileExtension');
             debugPrint('Android nameWithoutExtension $nameWithoutExtension');
@@ -65,9 +65,9 @@ class MediaDownload {
           } else {
             String fileExtension = FileNameFormat().fileNameExtension(url);
             String nameWithoutExtension =
-                FileNameFormat().fileNameWithOutExtension(url);
+            FileNameFormat().fileNameWithOutExtension(url);
             final File file =
-                File('$location/$nameWithoutExtension.$fileExtension');
+            File('$location/$nameWithoutExtension.$fileExtension');
             await file.writeAsBytes(bytes);
             await downloadFile(
                 url,
@@ -90,7 +90,7 @@ class MediaDownload {
             Directory documents = await getApplicationDocumentsDirectory();
             String fileExtension = FileNameFormat().fileNameExtension(url);
             String nameWithoutExtension =
-                FileNameFormat().fileNameWithOutExtension(url);
+            FileNameFormat().fileNameWithOutExtension(url);
             final File file = File(
                 '${documents.path}/${fileName ?? nameWithoutExtension}.$fileExtension');
             await file.writeAsBytes(bytes);
@@ -103,9 +103,9 @@ class MediaDownload {
           } else {
             String fileExtension = FileNameFormat().fileNameExtension(url);
             String nameWithoutExtension =
-                FileNameFormat().fileNameWithOutExtension(url);
+            FileNameFormat().fileNameWithOutExtension(url);
             final File file =
-                File('$location/$nameWithoutExtension.$fileExtension');
+            File('$location/$nameWithoutExtension.$fileExtension');
             await file.writeAsBytes(bytes);
             // await showCustomNotification(
             //     fileName ?? nameWithoutExtension, nameWithoutExtension);
@@ -176,7 +176,7 @@ class MediaDownload {
   Future<void> requestPermission() async {
     final PermissionStatus status = await Permission.storage.request();
     final PermissionStatus notificationStatus =
-        await Permission.notification.request();
+    await Permission.notification.request();
     if (status.isGranted && notificationStatus.isGranted) {
     } else if (status.isPermanentlyDenied ||
         notificationStatus.isPermanentlyDenied) {
@@ -187,7 +187,6 @@ class MediaDownload {
   ///showCustomNotification(iOS Code)
   ///
   ///This method helps to show notification in the iOS device. It will directly open the file when it is downloaded successfully.
-
   Future<void> showCustomNotification(
       String titleMessage, String bodyMessage) async {
     const platform = MethodChannel('showCustomNotification');
