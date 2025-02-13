@@ -28,6 +28,8 @@ android {
     compileSdkVersion 31
     namespace 'com.flutter_media_downloader.flutter_media_downloader'
 
+    namespace "com.flutter_media_downloader.flutter_media_downloader"
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
