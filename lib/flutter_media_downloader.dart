@@ -175,11 +175,14 @@ class MediaDownload {
 
   Future<void> requestPermission() async {
     final PermissionStatus status = await Permission.storage.request();
-    final PermissionStatus notificationStatus =
-    await Permission.notification.request();
-    if (status.isGranted && notificationStatus.isGranted) {
-    } else if (status.isPermanentlyDenied ||
-        notificationStatus.isPermanentlyDenied) {
+    // final PermissionStatus notificationStatus =
+    // await Permission.notification.request();
+    if (status.isGranted 
+    // && notificationStatus.isGranted
+    ) {
+    } else if (status.isPermanentlyDenied 
+    // || notificationStatus.isPermanentlyDenied
+        ) {
       await openAppSettings();
     }
   }
