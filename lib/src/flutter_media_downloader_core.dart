@@ -9,7 +9,6 @@
 ///
 /// This is Phase 1 - core engine only. No UI, no platform implementations,
 /// no background downloading, no pause/resume, no persistence.
-library flutter_media_downloader_core;
 
 // Models
 export 'models/download_request.dart';
