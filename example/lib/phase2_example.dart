@@ -45,6 +45,14 @@ Future<void> runDownloadExample() async {
             '(${update.receivedBytes}/${update.totalBytes} bytes)');
         break;
 
+      case DownloadStatus.paused:
+        print('[${update.taskId}] Paused at $progress%');
+        break;
+
+      case DownloadStatus.resuming:
+        print('[${update.taskId}] Resuming from $progress%');
+        break;
+
       case DownloadStatus.completed:
         print('[${update.taskId}] ✓ Completed');
         print('  File saved to: ${update.filePath}\n');

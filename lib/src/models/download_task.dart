@@ -28,6 +28,9 @@ class DownloadTask {
   /// Optional error message if status is failed
   final String? errorMessage;
 
+  /// Whether the server supports resume (Accept-Ranges header present)
+  final bool supportsResume;
+
   /// Creates a download task.
   const DownloadTask({
     required this.id,
@@ -38,6 +41,7 @@ class DownloadTask {
     this.totalBytes = -1,
     this.filePath,
     this.errorMessage,
+    this.supportsResume = false,
   });
 
   /// Calculates the download progress as a value between 0.0 and 1.0.
@@ -60,6 +64,7 @@ class DownloadTask {
     int? totalBytes,
     String? filePath,
     String? errorMessage,
+    bool? supportsResume,
   }) {
     return DownloadTask(
       id: id ?? this.id,
@@ -70,6 +75,7 @@ class DownloadTask {
       totalBytes: totalBytes ?? this.totalBytes,
       filePath: filePath ?? this.filePath,
       errorMessage: errorMessage ?? this.errorMessage,
+      supportsResume: supportsResume ?? this.supportsResume,
     );
   }
 

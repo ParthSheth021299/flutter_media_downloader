@@ -70,6 +70,16 @@ class _LazyPlatformDownloader implements PlatformDownloader {
   }
 
   @override
+  Future<void> pauseDownload(String taskId) {
+    return _downloader.pauseDownload(taskId);
+  }
+
+  @override
+  Future<void> resumeDownload(DownloadTask task) {
+    return _downloader.resumeDownload(task);
+  }
+
+  @override
   Future<void> dispose() async {
     final instance = _instance;
     if (instance != null) {

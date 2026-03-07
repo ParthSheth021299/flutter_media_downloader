@@ -150,8 +150,9 @@ class DownloadManager {
       _queuedTaskIds.remove(taskId);
     }
 
-    // Remove from active set if downloading
-    if (task.status == DownloadStatus.downloading) {
+    // Remove from active set if downloading or resuming
+    if (task.status == DownloadStatus.downloading ||
+        task.status == DownloadStatus.resuming) {
       _activeTaskIds.remove(taskId);
       // Notify platform to cancel
       await _platformDownloader.cancelDownload(taskId);
@@ -166,6 +167,103 @@ class DownloadManager {
 
     // Process queue to start next task
     await _processQueue();
+
+    return true;
+  }
+
+  /// Pauses a download task.
+  ///
+  /// If the task is currently downloading, it will be paused and can be
+  /// resumed later. The partially downloaded file is kept.
+  ///
+  /// [taskId] is the unique identifier of the task to pause.
+  ///
+  /// Returns `true` if the task was paused, `false` if the task
+  /// doesn't exist or cannot be paused (not in downloading state).
+  ///
+  /// Throws [StateError] if the manager has been disposed.
+  Future<bool> pause(String taskId) async {
+    _checkNotDisposed();
+
+    final task = _tasks[taskId];
+    if (task == null) return false;
+
+    // Can only pause downloading or resuming tasks
+    if (task.status != DownloadStatus.downloading &&
+        task.status != DownloadStatus.resuming) {
+      return false;
+    }
+
+    // Remove from active set
+    _activeTaskIds.remove(taskId);
+
+    // Notify platform to pause
+    await _platformDownloader.pauseDownload(taskId);
+
+    // Update task status
+    final pausedTask = task.copyWith(status: DownloadStatus.paused);
+    _tasks[taskId] = pausedTask;
+
+    // Emit paused event
+    _emitUpdate(pausedTask);
+
+    // Process queue to start next task
+    await _processQueue();
+
+    return true;
+  }
+
+  /// Resumes a paused download task.
+  ///
+  /// If the task is paused, it will attempt to resume from where it left off
+  /// using HTTP Range requests. If the server doesn't support resume or the
+  /// file has changed, the download will fail.
+  ///
+  /// [taskId] is the unique identifier of the task to resume.
+  ///
+  /// Returns `true` if the task resume was initiated, `false` if the task
+  /// doesn't exist or cannot be resumed (not in paused state).
+  ///
+  /// Throws [StateError] if the manager has been disposed.
+  Future<bool> resume(String taskId) async {
+    _checkNotDisposed();
+
+    final task = _tasks[taskId];
+    if (task == null) return false;
+
+    // Can only resume paused tasks
+    if (task.status != DownloadStatus.paused) {
+      return false;
+    }
+
+    // Check if we have capacity to resume
+    if (_activeTaskIds.length >= maxConcurrentDownloads) {
+      // Add to queue for later processing
+      _queuedTaskIds.add(taskId);
+      return true;
+    }
+
+    // Mark as resuming
+    _activeTaskIds.add(taskId);
+    final resumingTask = task.copyWith(status: DownloadStatus.resuming);
+    _tasks[taskId] = resumingTask;
+
+    // Emit resuming event
+    _emitUpdate(resumingTask);
+
+    // Start platform resume
+    try {
+      await _platformDownloader.resumeDownload(resumingTask);
+    } catch (e) {
+      // Handle resume failure
+      _activeTaskIds.remove(taskId);
+      await updateTask(
+        taskId: taskId,
+        status: DownloadStatus.failed,
+        errorMessage: 'Failed to resume download: $e',
+      );
+      return false;
+    }
 
     return true;
   }
@@ -188,6 +286,7 @@ class DownloadManager {
   /// [totalBytes] is the total file size (-1 if unknown).
   /// [filePath] is the final file path (for completed downloads).
   /// [errorMessage] is the error description (for failed downloads).
+  /// [supportsResume] indicates if the server supports HTTP Range requests.
   Future<void> updateTask({
     required String taskId,
     required DownloadStatus status,
@@ -195,6 +294,7 @@ class DownloadManager {
     int totalBytes = -1,
     String? filePath,
     String? errorMessage,
+    bool? supportsResume,
   }) async {
     _checkNotDisposed();
 
@@ -208,6 +308,7 @@ class DownloadManager {
       totalBytes: totalBytes,
       filePath: filePath,
       errorMessage: errorMessage,
+      supportsResume: supportsResume,
     );
     _tasks[taskId] = updatedTask;
 
@@ -231,28 +332,54 @@ class DownloadManager {
       final taskId = _queuedTaskIds.removeFirst();
       final task = _tasks[taskId];
 
-      if (task == null || task.status != DownloadStatus.queued) {
+      if (task == null) {
         continue;
       }
 
-      // Mark as downloading
-      _activeTaskIds.add(taskId);
-      final downloadingTask = task.copyWith(status: DownloadStatus.downloading);
-      _tasks[taskId] = downloadingTask;
+      // Handle queued tasks
+      if (task.status == DownloadStatus.queued) {
+        // Mark as downloading
+        _activeTaskIds.add(taskId);
+        final downloadingTask =
+            task.copyWith(status: DownloadStatus.downloading);
+        _tasks[taskId] = downloadingTask;
 
-      // Emit downloading event
-      _emitUpdate(downloadingTask);
+        // Emit downloading event
+        _emitUpdate(downloadingTask);
 
-      // Start platform download
-      try {
-        await _platformDownloader.startDownload(downloadingTask);
-      } catch (e) {
-        // Handle start failure
-        await updateTask(
-          taskId: taskId,
-          status: DownloadStatus.failed,
-          errorMessage: 'Failed to start download: $e',
-        );
+        // Start platform download
+        try {
+          await _platformDownloader.startDownload(downloadingTask);
+        } catch (e) {
+          // Handle start failure
+          await updateTask(
+            taskId: taskId,
+            status: DownloadStatus.failed,
+            errorMessage: 'Failed to start download: $e',
+          );
+        }
+      }
+      // Handle paused tasks that were queued for resume
+      else if (task.status == DownloadStatus.paused) {
+        // Mark as resuming
+        _activeTaskIds.add(taskId);
+        final resumingTask = task.copyWith(status: DownloadStatus.resuming);
+        _tasks[taskId] = resumingTask;
+
+        // Emit resuming event
+        _emitUpdate(resumingTask);
+
+        // Start platform resume
+        try {
+          await _platformDownloader.resumeDownload(resumingTask);
+        } catch (e) {
+          // Handle resume failure
+          await updateTask(
+            taskId: taskId,
+            status: DownloadStatus.failed,
+            errorMessage: 'Failed to resume download: $e',
+          );
+        }
       }
     }
   }

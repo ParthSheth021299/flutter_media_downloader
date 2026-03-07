@@ -7,6 +7,7 @@
 /// - Cross-platform support (Mobile, Web, Desktop)
 /// - Concurrent download management with configurable limits
 /// - Real-time progress tracking
+/// - Pause and resume support with HTTP Range requests
 /// - Automatic queue management
 /// - Clean architecture with dependency inversion
 ///
@@ -23,6 +24,7 @@
 /// // Listen to progress updates
 /// manager.progressStream.listen((update) {
 ///   print('Progress: ${update.progress * 100}%');
+///   print('Status: ${update.status}');
 /// });
 ///
 /// // Enqueue a download
@@ -33,12 +35,19 @@
 ///   ),
 /// );
 ///
+/// // Pause a download
+/// await manager.pause(taskId);
+///
+/// // Resume a paused download
+/// await manager.resume(taskId);
+///
 /// // Cancel a download
 /// await manager.cancel(taskId);
 ///
 /// // Dispose when done
 /// await manager.dispose();
 /// ```
+library;
 
 // Core
 export 'src/core/download_manager.dart';

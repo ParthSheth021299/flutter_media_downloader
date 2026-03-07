@@ -19,6 +19,8 @@ PlatformDownloader createPlatformDownloader(DownloadManager downloadManager) {
 /// This implementation uses [HttpClient] to download files with
 /// chunked streaming for memory efficiency. Supports Android, iOS,
 /// Windows, macOS, and Linux platforms.
+///
+/// Supports pause and resume using HTTP Range requests.
 class IODownloader implements PlatformDownloader {
   /// Reference to the download manager for reporting updates
   final DownloadManager _downloadManager;
@@ -28,6 +30,9 @@ class IODownloader implements PlatformDownloader {
 
   /// Map of active download cancellation tokens
   final Map<String, _DownloadCancellation> _activeCancellations = {};
+
+  /// Map of active download file handles for pause/resume
+  final Map<String, RandomAccessFile> _activeFiles = {};
 
   /// Creates an IO-based downloader.
   ///
@@ -72,6 +77,10 @@ class IODownloader implements PlatformDownloader {
       // Get content length
       final totalBytes = response.contentLength;
 
+      // Check if server supports resume (Accept-Ranges header)
+      final acceptRanges = response.headers.value('accept-ranges');
+      final supportsResume = acceptRanges != null && acceptRanges != 'none';
+
       // Determine save path
       final savePath = await _determineSavePath(task, response);
 
@@ -84,19 +93,25 @@ class IODownloader implements PlatformDownloader {
         return;
       }
 
+      // Open file for writing
+      final raf = await file.open(mode: FileMode.write);
+      _activeFiles[task.id] = raf;
+
       // Download with progress tracking
-      final sink = file.openWrite();
       int receivedBytes = 0;
 
       try {
         await for (final chunk in response) {
           if (cancellation.isCanceled) {
-            await sink.close();
-            await file.delete();
-            return;
+            break;
           }
 
-          sink.add(chunk);
+          if (cancellation.isPaused) {
+            // Save current position and break
+            break;
+          }
+
+          await raf.writeFrom(chunk);
           receivedBytes += chunk.length;
 
           // Report progress
@@ -105,15 +120,23 @@ class IODownloader implements PlatformDownloader {
             status: DownloadStatus.downloading,
             receivedBytes: receivedBytes,
             totalBytes: totalBytes,
+            filePath: savePath,
+            supportsResume: supportsResume,
           );
         }
 
-        await sink.flush();
-        await sink.close();
+        await raf.flush();
+        await raf.close();
+        _activeFiles.remove(task.id);
 
-        // Check if canceled after download
+        // Check if canceled or paused after download
         if (cancellation.isCanceled) {
           await file.delete();
+          return;
+        }
+
+        if (cancellation.isPaused) {
+          // Keep the file for resume
           return;
         }
 
@@ -124,10 +147,12 @@ class IODownloader implements PlatformDownloader {
           receivedBytes: receivedBytes,
           totalBytes: totalBytes,
           filePath: savePath,
+          supportsResume: supportsResume,
         );
       } catch (e) {
-        await sink.close();
-        // Clean up partial file
+        await raf.close();
+        _activeFiles.remove(task.id);
+        // Clean up partial file on error
         if (await file.exists()) {
           await file.delete();
         }
@@ -150,6 +175,220 @@ class IODownloader implements PlatformDownloader {
     final cancellation = _activeCancellations[taskId];
     if (cancellation != null) {
       cancellation.cancel();
+    }
+
+    // Close file handle if open
+    final raf = _activeFiles[taskId];
+    if (raf != null) {
+      await raf.close();
+      _activeFiles.remove(taskId);
+    }
+  }
+
+  @override
+  Future<void> pauseDownload(String taskId) async {
+    final cancellation = _activeCancellations[taskId];
+    if (cancellation != null) {
+      cancellation.pause();
+    }
+
+    // Close file handle if open (will be reopened on resume)
+    final raf = _activeFiles[taskId];
+    if (raf != null) {
+      await raf.close();
+      _activeFiles.remove(taskId);
+    }
+  }
+
+  @override
+  Future<void> resumeDownload(DownloadTask task) async {
+    // Validate that we can resume
+    if (task.filePath == null || task.filePath!.isEmpty) {
+      throw Exception('Cannot resume: file path is not set');
+    }
+
+    final file = File(task.filePath!);
+    if (!await file.exists()) {
+      throw Exception('Cannot resume: partial file does not exist');
+    }
+
+    // Check if server supports resume
+    if (!task.supportsResume) {
+      // Server doesn't support resume, restart from beginning
+      await file.delete();
+      await startDownload(task.copyWith(
+        receivedBytes: 0,
+        status: DownloadStatus.downloading,
+      ));
+      return;
+    }
+
+    final cancellation = _DownloadCancellation();
+    _activeCancellations[task.id] = cancellation;
+
+    try {
+      // Parse URL
+      final uri = Uri.parse(task.url);
+
+      // Create HTTP request with Range header
+      final request = await _httpClient.getUrl(uri);
+
+      // Add custom headers
+      if (task.headers != null) {
+        task.headers!.forEach((key, value) {
+          request.headers.add(key, value);
+        });
+      }
+
+      // Add Range header to resume from last byte
+      request.headers.add('Range', 'bytes=${task.receivedBytes}-');
+
+      // Check if canceled before sending
+      if (cancellation.isCanceled) {
+        request.abort();
+        return;
+      }
+
+      // Send request
+      final response = await request.close();
+
+      // Validate response
+      if (response.statusCode == 416) {
+        // Range not satisfiable - file is already complete or invalid
+        throw Exception(
+            'Resume failed: Range not satisfiable (file may be complete)');
+      }
+
+      if (response.statusCode == 200) {
+        // Server doesn't support range, restart from beginning
+        await file.delete();
+        await startDownload(task.copyWith(
+          receivedBytes: 0,
+          status: DownloadStatus.downloading,
+        ));
+        return;
+      }
+
+      if (response.statusCode != 206) {
+        throw HttpException(
+          'HTTP ${response.statusCode}: ${response.reasonPhrase}',
+        );
+      }
+
+      // Validate content range
+      final contentRange = response.headers.value('content-range');
+      if (contentRange != null) {
+        // Parse content-range: bytes start-end/total
+        final rangeMatch =
+            RegExp(r'bytes (\d+)-(\d+)/(\d+)').firstMatch(contentRange);
+        if (rangeMatch != null) {
+          final startByte = int.parse(rangeMatch.group(1)!);
+          final totalBytes = int.parse(rangeMatch.group(3)!);
+
+          // Validate that server is sending from correct position
+          if (startByte != task.receivedBytes) {
+            throw Exception(
+                'Resume failed: Server returned incorrect byte range');
+          }
+
+          // Validate total size hasn't changed
+          if (task.totalBytes > 0 && totalBytes != task.totalBytes) {
+            // File size changed, restart download
+            await file.delete();
+            await startDownload(task.copyWith(
+              receivedBytes: 0,
+              status: DownloadStatus.downloading,
+            ));
+            return;
+          }
+        }
+      }
+
+      // Get total bytes (may be different from content-length for partial content)
+      int totalBytes = task.totalBytes;
+      if (contentRange != null) {
+        final rangeMatch =
+            RegExp(r'bytes \d+-\d+/(\d+)').firstMatch(contentRange);
+        if (rangeMatch != null) {
+          totalBytes = int.parse(rangeMatch.group(1)!);
+        }
+      }
+
+      // Check if canceled before downloading
+      if (cancellation.isCanceled) {
+        return;
+      }
+
+      // Open file for appending
+      final raf = await file.open(mode: FileMode.append);
+      _activeFiles[task.id] = raf;
+
+      // Resume download with progress tracking
+      int receivedBytes = task.receivedBytes;
+
+      try {
+        await for (final chunk in response) {
+          if (cancellation.isCanceled) {
+            break;
+          }
+
+          if (cancellation.isPaused) {
+            // Save current position and break
+            break;
+          }
+
+          await raf.writeFrom(chunk);
+          receivedBytes += chunk.length;
+
+          // Report progress
+          await _downloadManager.updateTask(
+            taskId: task.id,
+            status: DownloadStatus.downloading,
+            receivedBytes: receivedBytes,
+            totalBytes: totalBytes,
+            filePath: task.filePath,
+            supportsResume: true,
+          );
+        }
+
+        await raf.flush();
+        await raf.close();
+        _activeFiles.remove(task.id);
+
+        // Check if canceled or paused after download
+        if (cancellation.isCanceled) {
+          await file.delete();
+          return;
+        }
+
+        if (cancellation.isPaused) {
+          // Keep the file for resume
+          return;
+        }
+
+        // Report completion
+        await _downloadManager.updateTask(
+          taskId: task.id,
+          status: DownloadStatus.completed,
+          receivedBytes: receivedBytes,
+          totalBytes: totalBytes,
+          filePath: task.filePath,
+          supportsResume: true,
+        );
+      } catch (e) {
+        await raf.close();
+        _activeFiles.remove(task.id);
+        rethrow;
+      }
+    } catch (e) {
+      // Report failure
+      await _downloadManager.updateTask(
+        taskId: task.id,
+        status: DownloadStatus.failed,
+        errorMessage: 'Resume failed: $e',
+      );
+    } finally {
+      _activeCancellations.remove(task.id);
     }
   }
 
@@ -209,13 +448,19 @@ class IODownloader implements PlatformDownloader {
   }
 }
 
-/// Internal class to handle download cancellation.
+/// Internal class to handle download cancellation and pause.
 class _DownloadCancellation {
   bool _isCanceled = false;
+  bool _isPaused = false;
 
   bool get isCanceled => _isCanceled;
+  bool get isPaused => _isPaused;
 
   void cancel() {
     _isCanceled = true;
+  }
+
+  void pause() {
+    _isPaused = true;
   }
 }
